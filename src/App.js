@@ -29,12 +29,12 @@ function App() {
     }
     
     requestPermission();
-    socket.current = io('http://localhost:5000')
-    /*socket.current = io('https://86f8-2401-4900-3685-9904-84a-dbef-7896-cca1.ngrok-free.app', {  // change this link whenever you run ngrok
+    //socket.current = io('http://localhost:5000')
+    socket.current = io('https://86f8-2401-4900-3685-9904-84a-dbef-7896-cca1.ngrok-free.app', {  // change this link whenever you run ngrok
       extraHeaders: {
         "ngrok-skip-browser-warning": 5500
       }
-    })*/
+    })
 
     socket.current.on('offerAvailable', (status) => {
       setCanOffer(status.status);
