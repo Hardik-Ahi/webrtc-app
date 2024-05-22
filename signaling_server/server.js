@@ -9,12 +9,16 @@ app.use(cors({
     origin: ['https://192.168.0.106:3000', 'https://localhost:3000']
 }))
 
+app.get('/', (req, res) => {
+    res.send("hello world");
+})
+
 const server = http.createServer(app);  // 'app' is actually a function => callback function
 // 'app' can be passed to both http and https, thus we can use the same app configuration on http and https.
 
 const io = socketIO(server, {
     cors: {
-        origin: ['https://192.168.0.106:3000', 'https://localhost:3000']
+        origin: '*'
     }
 });
 let clientOffer = null;
