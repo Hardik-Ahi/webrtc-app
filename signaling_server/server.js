@@ -4,7 +4,7 @@ const socketIO = require('socket.io')
 const port = 5000
 const cors = require('cors')
 
-const origins = ['https://192.168.0.106:3000', 'https://localhost:3000']
+const origins = ['https://192.168.0.106:3000', 'https://localhost:3000']  // add public url of this laptop
 const app = express()
 app.use(cors({
     origin: origins
@@ -80,15 +80,17 @@ io.on('connection', (socket) => {
     socket.on('sendOffererCandidates', () => {
         sendOffererCandidates = true;
         socket.emit('offererCandidate', {candidates: offererCandidates});  // emit this to answerer for the first time.
+        //console.log("offerer: "+offererCandidates);
     })
     
     socket.on('sendAnswererCandidates', () => {
         sendAnswererCandidates = true;
         socket.emit('answererCandidate', {candidates: answererCandidates});  // emit this to answerer for the first time.
+        //console.log("answerer: "+answererCandidates);
     })
 
     socket.on('offererCandidate', (candidate) => {
-        console.log("length of offerer array: "+offererCandidates.length);
+        //console.log("offerer candidate: "+candidate.sdpMid);
         offererCandidates.push(candidate);
         if(sendOffererCandidates){
             socket.broadcast.emit('offererCandidate', {candidates: offererCandidates});  // answerer may not be receiving this broadcast initially
@@ -96,7 +98,7 @@ io.on('connection', (socket) => {
     })
     
     socket.on('answererCandidate', (candidate) => {
-        console.log("length of answerer array: "+answererCandidates.length);
+        //console.log("answerer candidate: "+candidate);
         answererCandidates.push(candidate);
         if(sendAnswererCandidates){
             socket.broadcast.emit('answererCandidate', {candidates: answererCandidates});  // offerer must receive this, else setup fails.

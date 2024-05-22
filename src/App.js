@@ -32,12 +32,12 @@ function App() {
     }
     
     requestPermission();
-    socket.current = io('http://localhost:5000')
-    /*socket.current = io('https://86f8-2401-4900-3685-9904-84a-dbef-7896-cca1.ngrok-free.app', {  // change this link whenever you run ngrok
+    //socket.current = io('http://localhost:5000')
+    socket.current = io('https://46ef-49-204-6-65.ngrok-free.app', {  // change this link whenever you run ngrok
       extraHeaders: {
         "ngrok-skip-browser-warning": 5500
       }
-    })*/
+    })
 
     socket.current.on('offerAvailable', (status) => {
       setCanOffer(status.status);
@@ -45,10 +45,10 @@ function App() {
     })
 
     socket.current.on('answer', (answer) => {
-      console.log("I received an answer to my offer");
+      //console.log("I received an answer to my offer");
       connection.current.setRemoteDescription(answer).then(() => {
         console.log("offerer set remote description");
-        console.log("I am offerer; can answerer accept trickled ice? "+connection.current.canTrickleIceCandidates);
+        //console.log("I am offerer; can answerer accept trickled ice? "+connection.current.canTrickleIceCandidates);
         socket.current.emit('sendAnswererCandidates');
       })
     })
@@ -67,33 +67,32 @@ function App() {
     })*/
 
     socket.current.on('offererCandidate', (offererCandidates) =>{
-      console.log("answerer received array of offerer candidates: "+offererCandidates.candidates.length);
       offererIndex.current = offererIndex.current + 1;
-      console.log("offererIndex: "+offererIndex.current);
-      let executed = false;
+
       while(offererIndex.current < offererCandidates.candidates.length){
-        executed = true;
-        connection.current.addIceCandidate(offererCandidates.candidates[offererIndex]).then(() => {
-          console.log("added 1 trickled candidate sent by offerer; I am answerer.");
+        const candidate = offererCandidates.candidates[offererIndex.current];
+        //console.log("CANDIDATE: "+candidate.sdpMid);
+        connection.current.addIceCandidate(new RTCIceCandidate(candidate)).then(() => {
+          //console.log("added 1 trickled candidate sent by offerer; I am answerer.");
         })
         offererIndex.current = offererIndex.current + 1;  // WEIRD: putting this update stmt. inside then() makes infinite loop
       }
-      console.log("while loop: "+executed);
       offererIndex.current = offererIndex.current - 1;
     })
     
     socket.current.on('answererCandidate', (answererCandidates) => {
-      console.log("offerer received array of answerer candidates: "+answererCandidates.candidates.length);
       answererIndex.current = answererIndex.current + 1;
-      let executed = false;
+      
       while(answererIndex.current < answererCandidates.candidates.length){
-        executed = true;
-        connection.current.addIceCandidate(answererCandidates.candidates[answererIndex]).then(() => {
-          console.log("added 1 trickled candidate sent by answerer; I am offerer.");
+        
+        const candidate = answererCandidates.candidates[answererIndex.current];
+        //console.log("CANDIDATE: "+candidate.sdpMid);
+        // ESSENTIAL: new RTCIceCandidate(candidate).
+        connection.current.addIceCandidate(new RTCIceCandidate(candidate)).then(() => {
+          //console.log("added 1 trickled candidate sent by answerer; I am offerer.");
         })
         answererIndex.current = answererIndex.current + 1;
       }
-      console.log("while loop: "+executed);
       answererIndex.current = answererIndex.current - 1;
     })
 
@@ -110,15 +109,14 @@ function App() {
     });
     
     connection.current.addEventListener('iceconnectionstatechange', (event) => {
-      console.log("current state of ICE: "+ connection.current.iceConnectionState);
+      console.log("ICE state: "+ connection.current.iceConnectionState);
     })
     
     
     connection.current.addEventListener("icegatheringstatechange", (event) => {
-      console.log("current state of ICE: "+ connection.current.iceConnectionState);
       switch(event.target.iceGatheringState){
         case "gathering":
-          console.log("switched to gathering more candidates.");
+          console.log("now gathering ice candidates.");
           break;
         case "complete":
           console.log("finished gathering ice candidates.");
@@ -131,7 +129,7 @@ function App() {
     })
 
     connection.current.addEventListener('connectionstatechange', (event) => {
-      console.log("STATE: "+connection.current.connectionState);
+      console.log("CONNECTION state: "+connection.current.connectionState);
     })
 
     // guess: gathering this starts only after setLocalDescription(), so didIOffer should work fine.
@@ -139,13 +137,13 @@ function App() {
       if(event.candidate !== null){
         // myCandidates.current.push(event.candidate);
         socket.current.emit(didIOffer.current ? 'offererCandidate' : 'answererCandidate', event.candidate);
-        console.log("========== found candidate: " + event.candidate);
+        //console.log("========== found candidate: " + event.candidate.candidate + ", and media: "+ event.candidate.sdpMid);
       }
     })
 
 
     localStream.current.srcObject.getTracks().forEach((item, index) => {
-      console.log(item);
+      //console.log(item);
       connection.current.addTrack(item);
     })
 
@@ -173,17 +171,16 @@ function App() {
         }).then(() => {
           console.log("answerer set local description");
           socket.current.emit('answer', connection.current.localDescription);
-          console.log("I am answerer; can offerer accept trickled ice? "+connection.current.canTrickleIceCandidates);
+          //console.log("I am answerer; can offerer accept trickled ice? "+connection.current.canTrickleIceCandidates);
           socket.current.emit('sendOffererCandidates');
         }).catch((reason) => console.log(reason));
     }
 
     connection.current.addEventListener('track', (event) => {
       // this fires 2 times: once for camera track, once for microphone track
-      console.log("event: "+event);
-      console.log("received track: "+event.track);  // mediastreamtrack object
-      console.log("content hint: "+event.track.contentHint);  // no output
-      console.log("streams: "+event.streams.length);  // length is 0
+      //console.log("event: "+event);
+      //console.log("received track: "+event.track);  // mediastreamtrack object
+      // console.log("streams: "+event.streams.length);  // length is 0
       remoteTrack.current.addTrack(event.track);
       remoteStream.current.srcObject = remoteTrack.current;
     });
