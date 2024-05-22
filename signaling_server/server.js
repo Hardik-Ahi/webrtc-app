@@ -4,9 +4,10 @@ const socketIO = require('socket.io')
 const port = 5000
 const cors = require('cors')
 
+const origins = ['https://192.168.0.106:3000', 'https://localhost:3000']
 const app = express()
 app.use(cors({
-    origin: ['https://192.168.0.106:3000', 'https://localhost:3000']
+    origin: origins
 }))
 
 app.get('/', (req, res) => {
@@ -18,13 +19,15 @@ const server = http.createServer(app);  // 'app' is actually a function => callb
 
 const io = socketIO(server, {
     cors: {
-        origin: '*'
+        origin: origins
     }
 });
 let clientOffer = null;
 let clientAnswer = null;
 let offererCandidates = [];
 let answererCandidates = [];
+let sendOffererCandidates = false;
+let sendAnswererCandidates = false;
 
 io.on('connection', (socket) => {
     console.log("some one connected");
@@ -41,6 +44,7 @@ io.on('connection', (socket) => {
             socket.broadcast.emit("offerAvailable", {status: clientOffer === null ? true: false, offer: clientOffer});
         }
         else{
+            // this will never execute, because of the way client code is written.
             console.log("second client trying to create offer (not permitted)");
         }
     })
@@ -56,7 +60,7 @@ io.on('connection', (socket) => {
         }
     })
 
-    socket.on('iceCandidates', (object) => {
+    /*socket.on('iceCandidates', (object) => {
         const offerer = object.offerer;
         if(offerer){
             offererCandidates = [...object.candidates];
@@ -70,7 +74,36 @@ io.on('connection', (socket) => {
             console.log("starting to emit");
             io.emit('iceCandidates', {offererCandidates: offererCandidates, answererCandidates: answererCandidates});
         }
+    })*/
+
+    // let answerer tell us when it is ready to start receiving the trickle of offerer's ice candidates 
+    socket.on('sendOffererCandidates', () => {
+        sendOffererCandidates = true;
+        socket.emit('offererCandidate', {candidates: offererCandidates});  // emit this to answerer for the first time.
     })
+    
+    socket.on('sendAnswererCandidates', () => {
+        sendAnswererCandidates = true;
+        socket.emit('answererCandidate', {candidates: answererCandidates});  // emit this to answerer for the first time.
+    })
+
+    socket.on('offererCandidate', (candidate) => {
+        console.log("length of offerer array: "+offererCandidates.length);
+        offererCandidates.push(candidate);
+        if(sendOffererCandidates){
+            socket.broadcast.emit('offererCandidate', {candidates: offererCandidates});  // answerer may not be receiving this broadcast initially
+        }
+    })
+    
+    socket.on('answererCandidate', (candidate) => {
+        console.log("length of answerer array: "+answererCandidates.length);
+        answererCandidates.push(candidate);
+        if(sendAnswererCandidates){
+            socket.broadcast.emit('answererCandidate', {candidates: answererCandidates});  // offerer must receive this, else setup fails.
+        }
+    })
+
+
 })
 
 server.listen(port, () => {
