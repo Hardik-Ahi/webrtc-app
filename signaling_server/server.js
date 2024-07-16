@@ -4,7 +4,7 @@ const socketIO = require('socket.io')
 const port = 5000
 const cors = require('cors')
 
-const origins = ['https://192.168.0.106:3000', 'https://localhost:3000']  // add public url of this laptop
+const origins = ['https://192.168.0.106:3000', 'https://localhost:3000', 'https://049b-2401-4900-27af-66e9-ecc5-38d1-f0ef-e51b.ngrok-free.app']
 const app = express()
 app.use(cors({
     origin: origins
@@ -30,7 +30,6 @@ let sendOffererCandidates = false;
 let sendAnswererCandidates = false;
 
 io.on('connection', (socket) => {
-    console.log("some one connected");
     socket.emit("offerAvailable", {status: clientOffer === null ? true: false, offer: clientOffer});
 
     socket.on('disconnect', (reason) => {
@@ -60,37 +59,18 @@ io.on('connection', (socket) => {
         }
     })
 
-    /*socket.on('iceCandidates', (object) => {
-        const offerer = object.offerer;
-        if(offerer){
-            offererCandidates = [...object.candidates];
-        }
-        else{
-            answererCandidates = [...object.candidates];
-        }
-        console.log("received some ice candidates");
-        console.log("lengths: "+offererCandidates.length+" "+answererCandidates.length+" from " + offerer);
-        if(offererCandidates.length > 0 && answererCandidates.length > 0){
-            console.log("starting to emit");
-            io.emit('iceCandidates', {offererCandidates: offererCandidates, answererCandidates: answererCandidates});
-        }
-    })*/
-
     // let answerer tell us when it is ready to start receiving the trickle of offerer's ice candidates 
     socket.on('sendOffererCandidates', () => {
         sendOffererCandidates = true;
         socket.emit('offererCandidate', {candidates: offererCandidates});  // emit this to answerer for the first time.
-        //console.log("offerer: "+offererCandidates);
     })
     
     socket.on('sendAnswererCandidates', () => {
         sendAnswererCandidates = true;
-        socket.emit('answererCandidate', {candidates: answererCandidates});  // emit this to answerer for the first time.
-        //console.log("answerer: "+answererCandidates);
+        socket.emit('answererCandidate', {candidates: answererCandidates});  // emit this to offerer for the first time.
     })
 
     socket.on('offererCandidate', (candidate) => {
-        //console.log("offerer candidate: "+candidate.sdpMid);
         offererCandidates.push(candidate);
         if(sendOffererCandidates){
             socket.broadcast.emit('offererCandidate', {candidates: offererCandidates});  // answerer may not be receiving this broadcast initially
@@ -98,13 +78,11 @@ io.on('connection', (socket) => {
     })
     
     socket.on('answererCandidate', (candidate) => {
-        //console.log("answerer candidate: "+candidate);
         answererCandidates.push(candidate);
         if(sendAnswererCandidates){
             socket.broadcast.emit('answererCandidate', {candidates: answererCandidates});  // offerer must receive this, else setup fails.
         }
     })
-
 
 })
 
