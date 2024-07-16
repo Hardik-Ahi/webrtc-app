@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {io} from 'socket.io-client';
 
-function App() {
+export default function App() {
   const localStream = useRef(null);  // for directly manipulating DOM elements; otherwise they are considered react components
   const remoteStream = useRef();
   const remoteTrack = useRef(new MediaStream());
@@ -15,6 +15,9 @@ function App() {
 
   const offererIndex = useRef(-1);  // represents the index till which we have processed the candidates.
   const answererIndex = useRef(-1);
+
+  const canvas = useRef(null);
+  const ctx = useRef(null);
   
   useEffect(() => {
     const constraints = {
@@ -32,12 +35,12 @@ function App() {
     }
     
     requestPermission();
-    //socket.current = io('http://localhost:5000')
-    socket.current = io('https://46ef-49-204-6-65.ngrok-free.app', {  // change this link whenever you run ngrok
+    socket.current = io('http://localhost:5000')
+    /*socket.current = io('https://cuddly-monster-remarkably.ngrok-free.app', {  // ngrok static domain
       extraHeaders: {
         "ngrok-skip-browser-warning": 5500
       }
-    })
+    })*/
 
     socket.current.on('offerAvailable', (status) => {
       setCanOffer(status.status);
@@ -96,9 +99,17 @@ function App() {
       answererIndex.current = answererIndex.current - 1;
     })
 
+    canvas.current = document.getElementById("canvas");
+    ctx.current = canvas.current.getContext("2d");
+    canvas.current.addEventListener("pointerdown", pointerdown(ctx, canvas));
+    canvas.current.addEventListener("pointerup", pointerup(ctx, canvas));
+
+    draw(ctx);
+
     return () => {
       socket.current.disconnect();
     }
+
   }, [])
 
   const onOpenConnection = (event) => {
@@ -195,7 +206,40 @@ function App() {
     <video ref = {localStream} controls autoPlay width = "300" height = "200"></video>
     <video ref = {remoteStream} controls autoPlay width = "300" height = "200"></video>
   </div>
+  <canvas id = "canvas" width = "500" height = "500"></canvas>
   </>;
 }
 
-export default App;
+
+function draw(ctx){
+  ctx.current.fillStyle = "blue";
+  ctx.current.fillRect(0, 0, 50, 50);
+}
+
+function pointerdown(ctx, canvas){
+  canvas.current.addEventListener("pointermove", pointermove(ctx));
+  return function(event){
+    drawLine(ctx, event.target.clientX, event.target.clientY);
+  }
+}
+
+
+function pointermove(ctx){
+  return function(event){
+    drawLine(ctx, event.target.clientX, event.target.clientY);
+  }
+}
+
+function pointerup(ctx, canvas){
+  canvas.current.removeEventListener("pointermove", pointermove(ctx));
+  return function(event){
+    
+  }
+}
+
+function drawLine(ctx, startX, startY){
+  console.log("creating shape");
+  ctx.current.moveTo(startX, startY);
+  ctx.current.fillStyle = "blue";
+  ctx.current.fillRect(startX, startY, 50, 50);
+}
