@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {io} from 'socket.io-client';
 
 function App() {
@@ -15,27 +15,25 @@ function App() {
   const offererIndex = useRef(-1);  // represents the index till which we have processed the candidates.
   const answererIndex = useRef(-1);
   
-  useEffect(() => {
+  const requestPermission = useCallback(async() => {
     const constraints = {
       audio: true,
       video: true
     }
-    const requestPermission = async() => {
-      navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-        localStream.current.srcObject = stream;
-        
-      }, (reasonForFailure) => {
-        console.log(reasonForFailure);
-      })
-    }
-    
-    requestPermission();
-    //socket.current = io('http://localhost:5000')
-    socket.current = io('https://cuddly-monster-remarkably.ngrok-free.app', {
+    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+      localStream.current.srcObject = stream;
+    }, (reasonForFailure) => {
+      console.log(reasonForFailure);
+    })
+  }, []);  // no dependencies => never changes.
+
+  const socketSetup = useCallback(() => {
+    socket.current = io('http://localhost:5000')
+    /*socket.current = io('https://cuddly-monster-remarkably.ngrok-free.app', {
       extraHeaders: {
         "ngrok-skip-browser-warning": 5500
       }
-    })
+    })*/
 
     socket.current.on('offerAvailable', (status) => {
       setCanOffer(status.status);
@@ -50,13 +48,9 @@ function App() {
 
     socket.current.on('offererCandidate', (offererCandidates) =>{
       offererIndex.current = offererIndex.current + 1;
-
       while(offererIndex.current < offererCandidates.candidates.length){
         const candidate = offererCandidates.candidates[offererIndex.current];
-
-        connection.current.addIceCandidate(new RTCIceCandidate(candidate)).then(() => {
-          
-        })
+        connection.current.addIceCandidate(new RTCIceCandidate(candidate)).then(() => {})
         offererIndex.current = offererIndex.current + 1;
       }
       offererIndex.current = offererIndex.current - 1;
@@ -64,23 +58,23 @@ function App() {
     
     socket.current.on('answererCandidate', (answererCandidates) => {
       answererIndex.current = answererIndex.current + 1;
-      
       while(answererIndex.current < answererCandidates.candidates.length){
-        
         const candidate = answererCandidates.candidates[answererIndex.current];
-        
-        connection.current.addIceCandidate(new RTCIceCandidate(candidate)).then(() => {
-          
-        })
+        connection.current.addIceCandidate(new RTCIceCandidate(candidate)).then(() => {})
         answererIndex.current = answererIndex.current + 1;
       }
       answererIndex.current = answererIndex.current - 1;
     })
+  }, []);  // ESlint says no errors here => never changes.
+
+  useEffect(() => {
+    requestPermission();
+    socketSetup();
 
     return () => {
       socket.current.disconnect();
     }
-  }, [])
+  }, [requestPermission, socketSetup]);  // but we know, these will always be memoized, thus will never change => never re-renders based on these.
 
   const onOpenConnection = (event) => {
     connection.current = new RTCPeerConnection({
@@ -103,23 +97,18 @@ function App() {
     if(canOffer){
       connection.current.createOffer().then((offer) => {
         didIOffer.current = true;
-        
         return connection.current.setLocalDescription(offer);
       }).then(() => {
-        
         socket.current.emit('offer', connection.current.localDescription);
       }).catch((reason) => console.log(reason));
     }
     else{
       connection.current.setRemoteDescription(offer.current).then(() => {
-        
         return connection.current.createAnswer();
         }).then((answer) => {
           didIOffer.current = false;
-          
           return connection.current.setLocalDescription(answer);
         }).then(() => {
-          
           socket.current.emit('answer', connection.current.localDescription);
           socket.current.emit('sendOffererCandidates');
         }).catch((reason) => console.log(reason));

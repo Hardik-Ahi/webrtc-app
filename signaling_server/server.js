@@ -50,6 +50,7 @@ io.on('connection', (socket) => {
 
     socket.on('answer', (answer) => {
         if(clientOffer === null){
+            // this also will never execute, because of the way client code is written.
             console.log("trying to create answer before offer created (not permitted)");
         }
         else{
