@@ -4,7 +4,7 @@ const socketIO = require('socket.io')
 const port = 5000
 const cors = require('cors')
 
-const origins = ['https://192.168.0.106:3000', 'https://localhost:3000', 'https://3e52-2401-4900-4823-a46b-a56e-9ed2-28d2-d8e4.ngrok-free.app']  // add public url of this laptop
+const origins = ['https://192.168.0.106:3000', 'https://localhost:3000']  // add public url of this laptop
 const app = express()
 app.use(cors({
     origin: origins
