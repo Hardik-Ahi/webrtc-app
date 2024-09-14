@@ -4,7 +4,7 @@ const socketIO = require('socket.io')
 const port = 5000
 const cors = require('cors')
 
-const origins = ['https://192.168.0.106:3000', 'https://localhost:3000', 'https://049b-2401-4900-27af-66e9-ecc5-38d1-f0ef-e51b.ngrok-free.app']
+const origins = ['https://192.168.0.106:3000', 'https://localhost:3000', process.env.REACT_APP_NGROK_URL]
 const app = express()
 app.use(cors({
     origin: origins
@@ -83,6 +83,16 @@ io.on('connection', (socket) => {
         if(sendAnswererCandidates){
             socket.broadcast.emit('answererCandidate', {candidates: answererCandidates});  // offerer must receive this, else setup fails.
         }
+    })
+
+    socket.on('close', () => {
+        clientOffer = null;
+        clientAnswer = null;
+        offererCandidates = [];
+        answererCandidates = [];
+        sendOffererCandidates = false;
+        sendAnswererCandidates = false;
+        io.emit("offerAvailable", {status: clientOffer === null ? true: false, offer: clientOffer});
     })
 
 })

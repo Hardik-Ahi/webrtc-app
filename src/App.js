@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {io} from 'socket.io-client';
+import './page.css';
 
 function App() {
   const localStream = useRef(null);  // for directly manipulating DOM elements; otherwise they are considered react components
@@ -28,12 +29,12 @@ function App() {
   }, []);  // no dependencies => never changes.
 
   const socketSetup = useCallback(() => {
-    socket.current = io('http://localhost:5000')
-    /*socket.current = io('https://cuddly-monster-remarkably.ngrok-free.app', {
+    //socket.current = io('http://localhost:5000')
+    socket.current = io(process.env.REACT_APP_SERVER_URL, {
       extraHeaders: {
         "ngrok-skip-browser-warning": 5500
       }
-    })*/
+    })
 
     socket.current.on('offerAvailable', (status) => {
       setCanOffer(status.status);
@@ -119,18 +120,47 @@ function App() {
       remoteTrack.current.addTrack(event.track);
       remoteStream.current.srcObject = remoteTrack.current;
     });
+
+    connection.current.addEventListener('connectionstatechange', (event) => {
+      if(connection.current.connectionState === "disconnected"){
+        disableRemoteStream();
+        connection.current.close();
+      }
+    })
   }
+
+  const disableRemoteStream = () => {
+    remoteTrack.current.getTracks().forEach((track) => {
+      remoteTrack.current.removeTrack(track);
+    })
+    remoteStream.current.srcObject = null;
+
+    offererIndex.current = -1;
+    answererIndex.current = -1;
+  }
+
+  const onCloseConnection = (event) => {
+    try{
+      disableRemoteStream();
+      connection.current.close();
+      socket.current.emit('close');
+    }
+    catch(e){
+      console.log(e);
+    }
+  }
+
   
-  return <>
-  <div id = "top-button-row">
-  <button onClick = {onOpenConnection}>{canOffer ? 'Open Connection' : 'Answer Connection'}</button>
-  <button>Close Connection</button>
+  return <div id = 'root'>
+  <div id = 'video-panel'>
+    <video className = 'video' ref = {localStream} controls autoPlay width = "300" height = "200"></video>
+    <video className = 'video' ref = {remoteStream} controls autoPlay width = "300" height = "200"></video>
   </div>
-  <div>
-    <video ref = {localStream} controls autoPlay width = "300" height = "200"></video>
-    <video ref = {remoteStream} controls autoPlay width = "300" height = "200"></video>
+  <div id = "button-panel">
+  <button className = 'callButton' id = 'openConnection' onClick = {onOpenConnection}>{canOffer ? 'Open Connection' : 'Answer Connection'}</button>
+  <button className = 'callButton' id = 'closeConnection' onClick = {onCloseConnection}>Close Connection</button>
   </div>
-  </>;
+  </div>;
 }
 
 export default App;
