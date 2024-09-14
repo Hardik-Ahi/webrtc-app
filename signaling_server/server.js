@@ -6,7 +6,7 @@ const cors = require('cors')
 
 const app = express()
 app.use(cors({
-    origin: ['https://192.168.0.106:3000', 'https://localhost:3000']
+    origin: ['https://192.168.0.106:3000', 'https://localhost:3000', process.env.REACT_APP_NGROK_URL]
 }))
 
 app.get('/', (req, res) => {
