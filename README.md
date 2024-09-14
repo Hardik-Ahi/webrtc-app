@@ -1,8 +1,8 @@
 # What is this?
 
-A simple video conferencing application that enables two peers to connect to each other with their audio-video streams.
-Created using React.js.
-It uses WebRTC (Web Real-Time Collaboration) as the underlying technology to connect two peers.
+A simple video conferencing application that enables two peers to connect to each other with their audio-video streams.<br>
+Created using React.js.<br>
+It uses WebRTC (Web Real-Time Collaboration) as the underlying technology to connect two peers.<br>
 Uses socket.io for the signaling server.
 
 # How to use it?
