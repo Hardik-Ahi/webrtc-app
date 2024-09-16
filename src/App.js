@@ -153,8 +153,8 @@ function App() {
   
   return <div id = 'root'>
   <div id = 'video-panel'>
-    <video className = 'video' ref = {localStream} controls autoPlay width = "300" height = "200"></video>
-    <video className = 'video' ref = {remoteStream} controls autoPlay width = "300" height = "200"></video>
+    <video className = 'video' ref = {localStream} controls autoPlay></video>
+    <video className = 'video' ref = {remoteStream} controls autoPlay></video>
   </div>
   <div id = "button-panel">
   <button className = 'callButton' id = 'openConnection' onClick = {onOpenConnection}>{canOffer ? 'Open Connection' : 'Answer Connection'}</button>

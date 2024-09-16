@@ -4,6 +4,8 @@ const socketIO = require('socket.io')
 const port = 5000
 const cors = require('cors')
 
+require('dotenv').config()
+
 const origins = ['https://192.168.0.106:3000', 'https://localhost:3000', process.env.REACT_APP_NGROK_URL]
 const app = express()
 app.use(cors({
@@ -99,4 +101,5 @@ io.on('connection', (socket) => {
 
 server.listen(port, () => {
     console.log(`server listening on ${port}`);
+    console.log(process.env.REACT_APP_NGROK_URL);
 })
